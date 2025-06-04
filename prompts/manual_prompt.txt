@@ -1,0 +1,8 @@
+You are a QA expert. Based on the following feature description, write detailed manual test cases with:
+
+- Title
+- Test Steps
+- Expected Result
+
+Feature Description:
+{description}
