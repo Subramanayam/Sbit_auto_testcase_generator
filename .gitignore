@@ -9,3 +9,7 @@ __pycache__/
 # OS junk
 .DS_Store
 Thumbs.db
+
+# Ignore generated test case files
+automation_test_cases.py
+manual_test_cases.txt

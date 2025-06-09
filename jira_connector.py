@@ -1,51 +1,49 @@
+import os
 import requests
 from requests.auth import HTTPBasicAuth
+from dotenv import load_dotenv
 
-# Store your Jira credentials and API base here
-JIRA_BASE_URL = "https://your-domain.atlassian.net"
-JIRA_EMAIL = "your_email.com"
-JIRA_API_TOKEN = "your-api-token"
+class JiraClient:
+    def __init__(self):
+        load_dotenv()  # Load from .env
+        self.base_url = os.getenv("JIRA_BASE_URL")
+        self.email = os.getenv("JIRA_EMAIL")
+        self.api_token = os.getenv("JIRA_API_TOKEN")
+        self.auth = HTTPBasicAuth(self.email, self.api_token)
+        self.headers = {"Accept": "application/json"}
 
+    def extract_description_text(self, description_json):
+        text_parts = []
 
-def extract_description_text(description_json):
-    text_parts = []
+        for block in description_json.get("content", []):
+            if block.get("type") == "paragraph":
+                for item in block.get("content", []):
+                    if item.get("type") == "text":
+                        text_parts.append(item.get("text", ""))
+            elif block.get("type") == "bulletList":
+                for bullet in block.get("content", []):
+                    for item in bullet.get("content", []):
+                        if item.get("type") == "paragraph":
+                            for sub_item in item.get("content", []):
+                                if sub_item.get("type") == "text":
+                                    text_parts.append("- " + sub_item.get("text", ""))
 
-    for block in description_json.get("content", []):
-        if block.get("type") == "paragraph":
-            for item in block.get("content", []):
-                if item.get("type") == "text":
-                    text_parts.append(item.get("text", ""))
-        elif block.get("type") == "bulletList":
-            for bullet in block.get("content", []):
-                for item in bullet.get("content", []):
-                    if item.get("type") == "paragraph":
-                        for sub_item in item.get("content", []):
-                            if sub_item.get("type") == "text":
-                                text_parts.append("- " + sub_item.get("text", ""))
+        return "\n".join(text_parts)
 
-    return "\n".join(text_parts)
+    def get_issue(self, issue_id):
+        url = f"{self.base_url}/rest/api/3/issue/{issue_id}"
 
+        response = requests.get(url, headers=self.headers, auth=self.auth)
 
-
-def get_jira_issue(issue_id):
-    url = f"{JIRA_BASE_URL}/rest/api/3/issue/{issue_id}"
-    auth = HTTPBasicAuth(JIRA_EMAIL, JIRA_API_TOKEN)
-    headers = {
-        "Accept": "application/json"
-    }
-
-    response = requests.get(url, headers=headers, auth=auth)
-
-    if response.status_code == 200:
-        data = response.json()
-        description = extract_description_text(data['fields']['description']) if data['fields'].get(
-            'description') else ""
-        return {
-            "summary": data['fields']['summary'],
-            "description": description,
-            "issue_type": data['fields']['issuetype']['name'],
-            "components": [c['name'] for c in data['fields']['components']],
-            "labels": data['fields']['labels']
-        }
-    else:
-        raise Exception(f"Failed to fetch Jira issue {issue_id}: {response.status_code} - {response.text}")
+        if response.status_code == 200:
+            data = response.json()
+            description = self.extract_description_text(data['fields']['description']) if data['fields'].get('description') else ""
+            return {
+                "summary": data['fields']['summary'],
+                "description": description,
+                "issue_type": data['fields']['issuetype']['name'],
+                "components": [c['name'] for c in data['fields']['components']],
+                "labels": data['fields']['labels']
+            }
+        else:
+            raise Exception(f"Failed to fetch JIRA issue {issue_id}: {response.status_code} - {response.text}")
