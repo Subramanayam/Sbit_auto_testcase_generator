@@ -52,3 +52,11 @@ Folder Structure
 
 Contributing
 Feel free to open issues or submit pull requests to improve this project.
+
+
+Example-
+
+Jira ticket
+![Screenshot 2025-06-09 131344](https://github.com/user-attachments/assets/7da670aa-3e7e-4de9-a0e2-0727f910b79d)
+
+
